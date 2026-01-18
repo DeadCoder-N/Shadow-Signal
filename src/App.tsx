@@ -7,9 +7,9 @@ function App() {
   const { room } = useGameStore();
 
   return (
-    <>
+    <div className="min-h-screen bg-gray-900">
       {!room ? <Lobby /> : <GameRoom />}
-    </>
+    </div>
   );
 }
 
