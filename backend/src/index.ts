@@ -140,7 +140,7 @@ export async function createApp(
     await Promise.all(updates);
 
     // Update Room
-    // Deployment trigger comment
+    // Deployment trigger comment - This comment can be removed
     await edgespark.db.update(tables.rooms)
       .set({ 
         status: "selecting", 

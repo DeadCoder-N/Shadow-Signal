@@ -1,43 +1,51 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * Main application component
+ * @author Senior Full-Stack Developer
+ */
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { Lobby } from './components/game/Lobby';
 import { GameRoom } from './components/game/GameRoom';
+import { useGameStore } from './store/gameStore';
 
-function App() {
-  const [error, setError] = useState<string | null>(null);
-  const [room, setRoom] = useState(null);
+interface AppError {
+  message: string;
+  type: 'store' | 'app';
+}
 
-  useEffect(() => {
+const App: React.FC = () => {
+  const [error, setError] = useState<AppError | null>(null);
+  const { room } = useGameStore();
+
+  const handleStoreInitialization = useCallback(async () => {
     try {
-      // Test if we can import the store
-      import('./store/gameStore').then(({ useGameStore }) => {
-        console.log('Store loaded successfully');
-        // Try to use the store
-        const store = useGameStore.getState();
-        console.log('Store state:', store);
-        setRoom(store.room);
-      }).catch(err => {
-        console.error('Store import error:', err);
-        setError(`Store Error: ${err.message}`);
+      // Dynamic import for better code splitting
+      const { useGameStore } = await import('./store/gameStore');
+      const store = useGameStore.getState();
+      
+      // Validate store initialization
+      if (typeof store.createRoom !== 'function') {
+        throw new Error('Store not properly initialized');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError({ 
+        message: `Store Error: ${errorMessage}`, 
+        type: 'store' 
       });
-    } catch (err: any) {
-      console.error('App error:', err);
-      setError(`App Error: ${err.message}`);
     }
   }, []);
 
+  useEffect(() => {
+    handleStoreInitialization();
+  }, [handleStoreInitialization]);
+
+  const handleReload = useCallback(() => {
+    window.location.reload();
+  }, []);
+
   if (error) {
-    return (
-      <div className="min-h-screen bg-red-900 text-white p-8">
-        <h1 className="text-2xl font-bold mb-4">Debug Info</h1>
-        <p className="mb-4">{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="bg-blue-600 px-4 py-2 rounded"
-        >
-          Reload
-        </button>
-      </div>
-    );
+    return <ErrorScreen error={error} onReload={handleReload} />;
   }
 
   return (
@@ -45,6 +53,31 @@ function App() {
       {!room ? <Lobby /> : <GameRoom />}
     </div>
   );
+};
+
+/**
+ * Error screen component
+ */
+interface ErrorScreenProps {
+  error: AppError;
+  onReload: () => void;
 }
+
+const ErrorScreen: React.FC<ErrorScreenProps> = ({ error, onReload }) => (
+  <div className="min-h-screen bg-red-900 text-white p-4 sm:p-8 flex items-center justify-center">
+    <div className="max-w-md w-full space-y-4 text-center">
+      <h1 className="text-2xl font-bold mb-4">System Error</h1>
+      <div className="bg-red-800/50 p-4 rounded-lg border border-red-700">
+        <p className="text-sm font-mono break-words">{error.message}</p>
+      </div>
+      <button 
+        onClick={onReload}
+        className="w-full bg-blue-600 hover:bg-blue-500 px-4 py-3 rounded-lg font-bold transition-colors"
+      >
+        Reload Application
+      </button>
+    </div>
+  </div>
+);
 
 export default App;
