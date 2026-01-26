@@ -140,7 +140,7 @@ export async function createApp(
     await Promise.all(updates);
 
     // Update Room
-    // Deployment trigger comment - This comment can be removed
+    // Deployment trigger comment
     await edgespark.db.update(tables.rooms)
       .set({ 
         status: "selecting", 
@@ -241,5 +241,57 @@ export async function createApp(
     return c.json({ eliminated: toEliminate });
   });
 
+  // Force Phase Advance (Host only)
+  app.post("/api/public/rooms/:code/advance", async (c) => {
+    const code = c.req.param("code").toUpperCase();
+    const [room] = await edgespark.db.select().from(tables.rooms).where(eq(tables.rooms.code, code));
+    if (!room) return c.json({ error: "Room not found" }, 404);
+
+    let newStatus = room.status;
+    if (room.status === "selecting") {
+      newStatus = "voting";
+    } else if (room.status === "voting") {
+      // Auto-eliminate player with most votes
+      const players = await edgespark.db.select().from(tables.players).where(eq(tables.players.roomId, room.id));
+      
+      let maxVotes = -1;
+      let toEliminate: any = null;
+      
+      players.forEach(p => {
+        const votes = p.votes || 0;
+        if (votes > maxVotes) {
+          maxVotes = votes;
+          toEliminate = p;
+        }
+      });
+
+      if (toEliminate) {
+        await edgespark.db.update(tables.players)
+          .set({ isAlive: 0 })
+          .where(eq(tables.players.id, toEliminate.id));
+          
+        // Check Win Condition
+        if (toEliminate.role === "infiltrator" || toEliminate.role === "spy") {
+          newStatus = "ended";
+        } else {
+          const alive = players.filter(p => p.id !== toEliminate.id && p.isAlive === 1);
+          if (alive.length <= 2) {
+            newStatus = "ended";
+          } else {
+            newStatus = "selecting"; // Next round
+          }
+        }
+      }
+      
+      // Reset votes
+      await edgespark.db.update(tables.players).set({ votes: 0 }).where(eq(tables.players.roomId, room.id));
+    }
+
+    await edgespark.db.update(tables.rooms)
+      .set({ status: newStatus })
+      .where(eq(tables.rooms.id, room.id));
+
+    return c.json({ success: true, newStatus });
+  });
   return app;
 }

@@ -10,23 +10,23 @@
   },
   "dependencies": {
     "@edgespark/client": "^1.0.3",
-    // "@headlessui/react": "^1.7.18", // Not used in current implementation
-    // "cannon-es": "^0.20.0", // Physics engine not used
-    // "clsx": "^2.1.0", // Class utility not used
+    "@headlessui/react": "^1.7.18",
+    "cannon-es": "^0.20.0",
+    "clsx": "^2.1.0",
     "framer-motion": "^11.0.8",
-    // "gsap": "^3.13.0", // Animation library not used
-    // "i18next": "^23.10.1", // Internationalization not implemented
-    // "i18next-browser-languagedetector": "^7.2.0", // Not used
+    "gsap": "^3.13.0",
+    "i18next": "^23.10.1",
+    "i18next-browser-languagedetector": "^7.2.0",
     "lucide-react": "^0.533.0",
-    // "matter-js": "^0.20.0", // Physics engine not used
-    // "peerjs": "^1.5.5", // P2P not used
+    "matter-js": "^0.20.0",
+    "peerjs": "^1.5.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    // "react-i18next": "^14.1.0", // Not used
-    // "react-router-dom": "^6.30.1", // Routing not used in current implementation
-    // "react-use": "^17.6.0", // Utility hooks not used
-    // "three": "^0.179.1", // 3D library not used
-    // "zod": "^3.25.67", // Schema validation not used
+    "react-i18next": "^14.1.0",
+    "react-router-dom": "^6.30.1",
+    "react-use": "^17.6.0",
+    "three": "^0.179.1",
+    "zod": "^3.25.67",
     "zustand": "^4.4.7"
   },
   "devDependencies": {
