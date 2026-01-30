@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { motion } from 'framer-motion';
 import { User, ShieldAlert, Eye, Terminal, ArrowRight, Activity } from 'lucide-react';
@@ -7,30 +7,38 @@ import { Avatar } from './Avatar';
 export const Lobby = () => {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
-  const { createRoom, joinRoom } = useGameStore();
-  const [loading, setLoading] = useState(false);
+  const { createRoom, joinRoom, error, isLoading, clearError, setPlayerColor, getPlayerColor } = useGameStore();
   const [mode, setMode] = useState<'create' | 'join'>('create');
+  
+  const handleColorChange = (color: string) => {
+    if (name.trim()) {
+      setPlayerColor(name.trim(), color);
+    }
+  };
+
+  // Clear error when switching modes or changing inputs
+  useEffect(() => {
+    if (error) clearError();
+  }, [mode, name, code]);
 
   const handleCreate = async (gameMode: string) => {
-    if (!name) return;
-    setLoading(true);
+    if (!name.trim()) return;
     try {
-      await createRoom(gameMode, name);
+      const selectedColor = getPlayerColor(name.trim());
+      await createRoom(gameMode, name.trim(), selectedColor);
     } catch (e) {
-      console.error(e);
+      // Error is handled in store
     }
-    setLoading(false);
   };
 
   const handleJoin = async () => {
-    if (!name || !code) return;
-    setLoading(true);
+    if (!name.trim() || !code.trim()) return;
     try {
-      await joinRoom(code.toUpperCase(), name);
+      const selectedColor = getPlayerColor(name.trim());
+      await joinRoom(code.toUpperCase().trim(), name.trim(), selectedColor);
     } catch (e) {
-      console.error(e);
+      // Error is handled in store
     }
-    setLoading(false);
   };
 
   return (
@@ -61,7 +69,12 @@ export const Lobby = () => {
             {/* Identity Input with Avatar Preview */}
             <div className="flex items-center gap-4">
               <div className="shrink-0">
-                <Avatar name={name || '?'} size={60} />
+                <Avatar 
+                  name={name || '?'} 
+                  size={60} 
+                  color={name.trim() ? getPlayerColor(name.trim()) : undefined}
+                  onColorChange={handleColorChange}
+                />
               </div>
               <div className="space-y-2 flex-1">
                 <label className="text-[10px] uppercase tracking-widest text-neutral-500 ml-1">Agent Identity</label>
@@ -95,12 +108,19 @@ export const Lobby = () => {
 
             {/* Content */}
             <div className="min-h-[200px]">
+              {/* Error Message */}
+              {error && (
+                <div className="mb-4 p-3 bg-red-950/50 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                  ⚠️ {error}
+                </div>
+              )}
+              
               {mode === 'create' ? (
                 <div className="grid grid-cols-1 gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
                   <button 
                     onClick={() => handleCreate('infiltrator')}
-                    disabled={loading || !name}
-                    className="group relative bg-neutral-950 border border-neutral-800 p-4 rounded-xl hover:border-emerald-500/50 hover:bg-emerald-950/10 transition-all text-left overflow-hidden"
+                    disabled={isLoading || !name.trim()}
+                    className="group relative bg-neutral-950 border border-neutral-800 p-4 rounded-xl hover:border-emerald-500/50 hover:bg-emerald-950/10 transition-all text-left overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                     <div className="flex items-start justify-between">
@@ -116,8 +136,8 @@ export const Lobby = () => {
 
                   <button 
                     onClick={() => handleCreate('spy')}
-                    disabled={loading || !name}
-                    className="group relative bg-neutral-950 border border-neutral-800 p-4 rounded-xl hover:border-amber-500/50 hover:bg-amber-950/10 transition-all text-left overflow-hidden"
+                    disabled={isLoading || !name.trim()}
+                    className="group relative bg-neutral-950 border border-neutral-800 p-4 rounded-xl hover:border-amber-500/50 hover:bg-amber-950/10 transition-all text-left overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/5 to-amber-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                     <div className="flex items-start justify-between">
@@ -148,10 +168,10 @@ export const Lobby = () => {
                   </div>
                   <button 
                     onClick={handleJoin}
-                    disabled={loading || !name || !code}
+                    disabled={isLoading || !name.trim() || !code.trim()}
                     className="w-full bg-emerald-600 hover:bg-emerald-500 text-black font-bold py-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    {loading ? <Activity className="w-5 h-5 animate-spin" /> : 'INITIATE UPLINK'}
+                    {isLoading ? <Activity className="w-5 h-5 animate-spin" /> : 'INITIATE UPLINK'}
                   </button>
                 </div>
               )}

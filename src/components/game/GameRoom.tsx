@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore, Player } from '../../store/gameStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Copy, LogOut, Eye, EyeOff, Skull, Crown, Fingerprint, Target, ShieldAlert, Clock } from 'lucide-react';
+import { Copy, LogOut, Eye, EyeOff, Skull, Crown, Fingerprint, Target, ShieldAlert, Clock, Activity } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { EliminationSequence } from './EliminationSequence';
 import { Countdown } from './Countdown';
 
 export const GameRoom = () => {
-  const { room, players, me, startGame, submitClue, vote, eliminate, leaveRoom, forcePhaseAdvance } = useGameStore();
+  const { room, players, me, startGame, submitClue, vote, eliminate, leaveRoom, forcePhaseAdvance, isLoading, error, getPlayerColor } = useGameStore();
   const [revealed, setRevealed] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
   const [eliminatedPlayer, setEliminatedPlayer] = useState<Player | null>(null);
@@ -26,8 +26,12 @@ export const GameRoom = () => {
   const isGameActive = isSelecting || isVoting;
   const isDead = me.isAlive === 0;
 
-  // Parse options if available
-  const options = room.options ? JSON.parse(room.options) : [];
+  // Parse options if available (supports JSON array from Supabase or stringified JSON from legacy mock)
+  const options: string[] = Array.isArray((room as any).options)
+    ? (room as any).options
+    : (room as any).options
+      ? JSON.parse((room as any).options)
+      : [];
 
   // Server-synced timer calculation
   const getServerTime = () => {
@@ -277,7 +281,11 @@ export const GameRoom = () => {
                   animate={{ scale: 1, opacity: 1 }}
                   className="flex flex-col items-center gap-3 relative group"
                 >
-                  <Avatar name={p.name} size={100} />
+                <Avatar 
+                  name={p.name} 
+                  size={100} 
+                  color={p.color || getPlayerColor(p.name)}
+                />
                   <span className="font-bold truncate w-full text-center text-sm bg-neutral-900/50 px-3 py-1 rounded-full border border-white/10">
                     {p.name}
                   </span>
@@ -300,10 +308,17 @@ export const GameRoom = () => {
                       console.error('Manual start failed:', error);
                     }
                   }}
-                  disabled={players.length < 3}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-black font-bold px-12 py-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_30px_rgba(16,185,129,0.2)] hover:shadow-[0_0_50px_rgba(16,185,129,0.4)] transition-all transform hover:-translate-y-1"
+                  disabled={players.length < 3 || isLoading}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-black font-bold px-12 py-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_30px_rgba(16,185,129,0.2)] hover:shadow-[0_0_50px_rgba(16,185,129,0.4)] transition-all transform hover:-translate-y-1 flex items-center gap-2"
                 >
-                  INITIATE MISSION
+                  {isLoading ? (
+                    <>
+                      <Activity className="w-5 h-5 animate-spin" />
+                      STARTING...
+                    </>
+                  ) : (
+                    'INITIATE MISSION'
+                  )}
                 </button>
               </div>
             )}
@@ -460,7 +475,8 @@ export const GameRoom = () => {
                         <Avatar 
                           name={p.name} 
                           size={80} 
-                          isDead={isDeadPlayer} 
+                          isDead={isDeadPlayer}
+                          color={p.color || getPlayerColor(p.name)}
                         />
                         
                         {/* Vote Count Badge */}
@@ -530,7 +546,11 @@ export const GameRoom = () => {
                     <div className="flex items-center gap-3">
                       {players.find(p => p.role === 'infiltrator' || p.role === 'spy') && (
                         <>
-                          <Avatar name={players.find(p => p.role === 'infiltrator' || p.role === 'spy')?.name || ''} size={40} />
+                          <Avatar 
+                            name={players.find(p => p.role === 'infiltrator' || p.role === 'spy')?.name || ''} 
+                            size={40} 
+                            color={players.find(p => p.role === 'infiltrator' || p.role === 'spy')?.color || getPlayerColor(players.find(p => p.role === 'infiltrator' || p.role === 'spy')?.name || '')}
+                          />
                           <span className="font-bold text-red-400">
                             {players.find(p => p.role === 'infiltrator' || p.role === 'spy')?.name}
                           </span>

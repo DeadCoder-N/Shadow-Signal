@@ -32,6 +32,7 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
   onStartNewGame,
   onLeaveRoom
 }) => {
+  const { getPlayerColor } = useGameStore();
   const copyRoomCode = () => {
     navigator.clipboard.writeText(room.code);
   };
@@ -98,7 +99,11 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
                 key={player.id}
                 className="flex items-center gap-3 bg-neutral-900/50 p-3 rounded-xl"
               >
-                <Avatar name={player.name} size={40} />
+                <Avatar 
+                  name={player.name} 
+                  size={40} 
+                  color={player.color || getPlayerColor(player.name)}
+                />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
                     <span className="font-bold text-sm truncate">
